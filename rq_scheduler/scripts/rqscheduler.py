@@ -64,14 +64,8 @@ def main():
             scheduler.run(burst=args.burst)
             break
         except ValueError as exc:
-            if exc.message == "There's already an active RQ scheduler":
-                scheduler.log.debug(
-                    "An RQ scheduler instance is already running. Retrying in %d seconds.",
-                    10,
-                )
-                time.sleep(10)
-            else:
-                raise
+            scheduler.log.debug("An RQ scheduler instance is already running. Retrying in %d seconds.",10)
+            time.sleep(10)
 
 if __name__ == '__main__':
     main()

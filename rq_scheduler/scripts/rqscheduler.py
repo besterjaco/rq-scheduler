@@ -3,6 +3,7 @@
 import argparse
 import sys
 import os
+import time
 
 from redis import Redis
 from rq_scheduler.scheduler import Scheduler
@@ -58,7 +59,19 @@ def main():
                           interval=args.interval,
                           job_class=args.job_class,
                           queue_class=args.queue_class)
-    scheduler.run(burst=args.burst)
+    while True:
+        try:
+            scheduler.run(burst=args.burst)
+            break
+        except ValueError, exc:
+            if exc.message == "There's already an active RQ scheduler":
+                scheduler.log.debug(
+                    "An RQ scheduler instance is already running. Retrying in %d seconds.",
+                    10,
+                )
+                time.sleep(10)
+            else:
+                raise
 
 if __name__ == '__main__':
     main()

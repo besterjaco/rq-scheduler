@@ -48,9 +48,10 @@ There are two ways you can schedule a job. The first is using RQ Scheduler's ``e
     from datetime import datetime
 
     scheduler = Scheduler(connection=Redis()) # Get a scheduler for the "default" queue
+    scheduler = Scheduler('foo', connection=Redis()) # Get a scheduler for the "foo" queue
 
     # You can also instantiate a Scheduler using an RQ Queue
-    queue = Queue('foo', connection=Redis())
+    queue = Queue('bar', connection=Redis())
     scheduler = Scheduler(queue=queue)
 
     # Puts a job into the scheduler. The API is similar to RQ except that it
@@ -97,7 +98,8 @@ This is how you do it
         args=[arg1, arg2],             # Arguments passed into function when executed
         kwargs={'foo': 'bar'},         # Keyword arguments passed into function when executed
         interval=60,                   # Time before the function is called again, in seconds
-        repeat=10                      # Repeat this number of times (None means repeat forever)
+        repeat=10,                     # Repeat this number of times (None means repeat forever)
+        meta={'foo': 'bar'}            # Arbitrary pickleable data on the job itself
     )
 
 **IMPORTANT NOTE**: If you set up a repeated job, you must make sure that you
@@ -121,8 +123,9 @@ This is how you do it
         func=func,                  # Function to be queued
         args=[arg1, arg2],          # Arguments passed into function when executed
         kwargs={'foo': 'bar'},      # Keyword arguments passed into function when executed
-        repeat=10                   # Repeat this number of times (None means repeat forever)
-        queue_name=queue_name       # In which queue the job should be put in
+        repeat=10,                  # Repeat this number of times (None means repeat forever)
+        queue_name=queue_name,      # In which queue the job should be put in
+        meta={'foo': 'bar'}         # Arbitrary pickleable data on the job itself
     )
 
 -------------------------
@@ -220,3 +223,31 @@ The script accepts these arguments:
 
 The arguments pull default values from environment variables with the
 same names but with a prefix of ``RQ_REDIS_``.
+
+Running the Scheduler as a Service on Ubuntu
+--------------------------------------------
+
+sudo /etc/systemd/system/rqscheduler.service
+
+.. code-block:: bash
+    
+    [Unit]
+    Description=RQScheduler
+    After=network.target
+
+    [Service]
+    ExecStart=/home/<<User>>/.virtualenvs/<<YourVirtualEnv>>/bin/python \
+        /home/<<User>>/.virtualenvs/<<YourVirtualEnv>>/lib/<<YourPythonVersion>>/site-packages/rq_scheduler/scripts/rqscheduler.py
+
+    [Install]
+    WantedBy=multi-user.target
+
+You will also want to add any command line parameters if your configuration is not localhost or not set in the environmnt variabes.  
+
+Start, check Status and Enable the service
+
+.. code-block:: bash
+
+    sudo systemctl start rqscheduler.service
+    sudo systemctl status rqscheduler.service
+    sudo systemctl enable rqscheduler.service
